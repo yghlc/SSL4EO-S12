@@ -737,7 +737,7 @@ if __name__ == "__main__":
     collection = get_collection(args.collection, args.meta_cloud_name, args.cloud_pct)
 
     # initialize sampler
-    sampler = GaussianSampler(num_cities=args.num_cities, std=args.std)
+    sampler = GaussianSampler(input_vector=args.input_vector, num_cities=args.num_cities, std=args.std)
 
     dates = []
     for d in args.dates:
