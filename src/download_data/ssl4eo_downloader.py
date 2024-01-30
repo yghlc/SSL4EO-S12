@@ -82,6 +82,9 @@ import ee
 import numpy as np
 import rasterio
 import shapefile
+import geopandas as gpd
+import pandas as pd
+from pyproj import CRS
 import urllib3
 from rasterio.transform import Affine
 from rtree import index
@@ -106,12 +109,17 @@ class GaussianSampler:
     def __init__(
         self,
         interest_points: Optional[List[List[float]]] = None,
+        input_vector: Optional[str] = None,
         num_cities: int = 1000,
         std: float = 20,
     ) -> None:
         if interest_points is None:
-            cities = self.get_world_cities()
-            self.interest_points = self.get_interest_points(cities, size=num_cities)
+            if os.path.isfile(input_vector) is False:
+                cities = self.get_world_cities()
+                self.interest_points = self.get_interest_points(cities, size=num_cities)
+            else:
+                # read point from input_vector
+                self.interest_points = self.get_interest_points_from_vectorfile(input_vector)
         else:
             self.interest_points = interest_points
         self.std = std
@@ -145,6 +153,38 @@ class GaussianSampler:
     ) -> List[List[float]]:
         cities = sorted(cities, key=lambda c: int(c["population"]), reverse=True)[:size]
         points = [[float(c["lng"]), float(c["lat"])] for c in cities]
+        return points
+
+    @staticmethod
+    def get_interest_points_from_vectorfile(
+        vector_path: str
+    ) -> List[List[float]]:
+        gdf = gpd.read_file(vector_path)
+
+        # Check the current projection
+        current_crs = gdf.crs
+        target_crs = CRS.from_epsg(4326)
+        # Reproject if necessary
+        if current_crs != target_crs:
+            gdf = gdf.to_crs(target_crs)
+
+        if gdf.geom_type[0] != 'Point':
+            raise ValueError("The geometry type is not Point.")
+
+        # Extract the latitude and longitude coordinates
+        latitudes = gdf.geometry.y
+        longitudes = gdf.geometry.x
+
+        # points = [[float(c["lng"]), float(c["lat"])] for c in cities]
+        points = [[lng, lat ] for lat, lng in zip(latitudes, longitudes)]
+
+        # save to copy to csv
+        save_csv_path = os.path.splitext(os.path.basename(vector_path))[0] + '_latlon.csv'
+        data = pd.DataFrame({'Latitude': latitudes, 'Longitude': longitudes})
+        # Save the DataFrame to a CSV file
+        data.to_csv(save_csv_path, index=False)
+
+
         return points
 
     @staticmethod
@@ -583,6 +623,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--save_path", type=str, default="./data/", help="dir to save data"
+    )
+    parser.add_argument(
+        "--input_vector", type=str, default="", help="a vector file contain points"
     )
     # collection properties
     parser.add_argument(

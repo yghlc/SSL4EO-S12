@@ -3,7 +3,7 @@ set -eE -o functrace
 
 
 python ./src/download_data/ssl4eo_downloader.py \
-    --save_path ./data \
+    --save_path ./save_data \
     --collection COPERNICUS/S2 \
     --meta_cloud_name CLOUDY_PIXEL_PERCENTAGE \
     --cloud_pct 20 \
