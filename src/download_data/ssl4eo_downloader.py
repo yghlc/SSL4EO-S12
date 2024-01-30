@@ -86,7 +86,7 @@ import urllib3
 from rasterio.transform import Affine
 from rtree import index
 from shapely.geometry import Point, shape
-from torchvision.datasets.utils import download_and_extract_archive
+# from torchvision.datasets.utils import download_and_extract_archive
 from tqdm import tqdm
 
 warnings.simplefilter("ignore", UserWarning)
